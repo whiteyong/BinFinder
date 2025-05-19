@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울시 가로쓰레기통 위치 지도</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- 아이콘 라이브러리 추가 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 네이버 지도 API -->
+    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=aqo1ps0ggk"></script>
+    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=aqo1ps0ggk&submodules=geocoder"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+        }
+        
+        /* 광고 컨테이너 스타일 */
+        .ad-container {
+            width: 100%;
+            height: 70px;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #888;
+            z-index: 5;
+        }
+        
+        /* 지도 컨테이너 스타일 */
+        .map-container {
+            position: relative;
+            width: 100%;
+            flex: 1; /* 남은 공간 모두 차지 */
+            overflow: hidden;
+        }
+        
+        .map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* 쓰레기통 개수 오버레이
+        .trash-count-overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background-color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 10;
+            font-size: 14px;
+            font-weight: 500;
+        } */
+        
+        .trash-count-overlay span {
+            color: #188FFF;
+            font-weight: bold;
+        }
+        
+        /* 햄버거 메뉴 버튼 */
+        .menu-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: white;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        
+        .menu-button:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .menu-button i {
+            font-size: 18px;
+            color: #333;
+        }
+        
+        /* 현위치 버튼 */
+        .current-location-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #188FFF;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s ease;
+        }
+
+        .current-location-button:hover {
+            background-color: #f5f5f5;
+        }
+
+        .current-location-button:active {
+            transform: scale(0.95);
+        }
+
+        .current-location-button.active {
+            background-color: #188FFF;
+            color: white;
+        }
+        
+        /* 상태 바 */
+        .footer {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+            z-index: 5;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* 로딩 인디케이터 */
+        .loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 마커 정보 창 스타일 */
+        .marker-info-window {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            padding: 12px;
+            max-width: 300px;
+            font-size: 14px;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: auto; /* 클릭 이벤트 허용 */
+        }
+        
+        .marker-info-window.show {
+            display: block !important; /* !important로 강제 적용 */
+            opacity: 1 !important;
+        }
+        
+        .marker-info-window h4 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .marker-info-window .info-address {
+            margin-bottom: 8px;
+        }
+        
+        .marker-info-window .info-address p {
+            margin: 2px 0;
+            color: #666;
+        }
+        
+        .marker-info-window .detail-link {
+            display: block;
+            text-align: right;
+            color: #188FFF;
+            text-decoration: none;
+            margin-top: 8px;
+        }
+        
+        /* 정보창 화살표 추가 */
+        .marker-info-window::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 10px 10px 10px;
+            border-style: solid;
+            border-color: transparent transparent white transparent;
+        }
+
+        /* 사이드 메뉴 */
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .side-menu.show {
+            transform: translateX(0);
+        }
+        
+        .side-menu-content {
+            width: 280px;
+            background-color: white;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .side-menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .side-menu-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        
+        .menu-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .menu-list li {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        
+        .menu-list li:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .district-filter {
+            padding: 15px 20px;
+        }
+        
+        .district-filter h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        
+        .district-filter select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .side-menu-overlay {
+            flex: 1;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        /* GPS 권한 요청 모달 */
+        .gps-request-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .gps-request-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .gps-request-content {
+            background-color: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .gps-request-content h3 {
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        .gps-request-content p {
+            margin-bottom: 24px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #666;
+        }
+
+        .gps-request-buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .gps-request-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .gps-request-buttons button.cancel {
+            background-color: #f5f5f5;
+            color: #666;
+            margin-right: 8px;
+        }
+
+        .gps-request-buttons button.confirm {
+            background-color: #188FFF;
+            color: white;
+            margin-left: 8px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 상단 구글 애드센스 배너 영역 -->
+        <div class="ad-container">
+            <!-- 구글 애드센스 코드가 여기에 들어갑니다 -->
+            상단 광고 영역
+        </div>
+
+        <!-- 지도 영역 -->
+        <div class="map-container">
+            
+            <!-- 지도가 표시될 영역 -->
+            <div id="map" class="map"></div>
+            
+            <!-- 10km 이내 쓰레기통 개수 (지도 위에 표시) -->
+            <div class="trash-count-overlay">
+                10km 이내 <span id="nearbyTrashCount">0</span>개
+            </div>
+            
+            <!-- 햄버거 메뉴 버튼 (지도 위에 표시) -->
+            <button id="menuButton" class="menu-button">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <!-- 로딩 인디케이터 -->
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="spinner"></div>
+                <p>데이터를 불러오는 중...</p>
+            </div>
+
+            <!-- 현위치 버튼 -->
+            <button id="currentLocationButton" class="current-location-button">
+                <i class="fas fa-crosshairs"></i>
+            </button>
+
+            <!-- 위치 상세 정보 (처음에는 숨겨져 있음) -->
+            <div id="locationDetail" class="location-detail">
+                <div class="detail-header">
+                    <h3 id="locationTitle">위치 정보</h3>
+                    <button id="closeDetail" class="close-button">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="detail-content">
+                    <p><img src="carbon_location-filled.svg" alt="주소" style="width: 16px; height: 16px; margin-right: 4px; vertical-align: middle;"> <span id="locationAddress"></span></p>
+                    <p><img src="distance.svg" alt="거리" style="width: 16px; height: 16px; margin-right: 4px; vertical-align: middle;"> <span id="locationDistance">-</span></p>
+                    <p style="display: none;"><span id="locationDistrictAddress">-</span></p>
+                    <p style="display: none;"><strong>세부 위치:</strong> <span id="locationDetailAddress"></span></p>
+                    <p style="display: none;"><strong>설치 장소 유형:</strong> <span id="locationType"></span></p>
+                    <p><span id="trashType" style="display: inline-block; background-color: #f5f5f5; color: #666; font-size: 12px; padding: 2px 8px; border-radius: 4px; margin-top: 4px;"></span></p>
+                    <div style="margin: 20px 16px 0; height: 0.5px; background-color: #f0f0f0;"></div>
+                    <p style="margin-top: 20px; font-size: 14px;"><strong>오류 수정 요청</strong></p>
+                    <div style="margin-top: 12px; display: flex; align-items: center;">
+                        <span style="margin-right: 40px; font-size: 14px;">이름 <span style="color: red;">*</span></span>
+                        <input type="text" style="width: 190px; height: 35px; border-radius: 5px; border: 1px solid #ddd; padding: 0 10px;">
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <div style="margin-bottom: 8px;">
+                            <span style="font-size: 14px;">보안문자 <span style="color: red;">*</span></span>
+                        </div>
+                        <div id="captchaContainer" style="margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <div id="captchaText" style="width: 120px; height: 35px; display: flex; align-items: center; justify-content: center; font-family: monospace; font-size: 18px; letter-spacing: 3px; background: #f8f8f8; text-align: center; border-radius: 4px; user-select: none; border: 1px solid #ddd;"></div>
+                                <button id="refreshCaptcha" style="width: 35px; height: 35px; border: 1px solid #ddd; background: white; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0;">
+                                    <img src="refresh.svg" alt="새로고침" style="width: 20px; height: 20px;">
+                                </button>
+                                <input type="text" id="captchaInput" placeholder="보안문자 입력" style="width: 190px; height: 35px; border-radius: 5px; border: 1px solid #ddd; padding: 0 10px;">
+                            </div>
+                            <div id="captchaError" style="color: red; font-size: 12px; height: 16px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-footer">
+                    <button id="directionButton" class="detail-button">
+                        <i class="fas fa-directions"></i> 길찾기
+                    </button>
+                </div>
+
+                <!-- 마커 클릭 시 표시되는 작은 정보 창 -->
+                <div id="markerInfoWindow" class="marker-info-window">
+                    <h4 id="infoTitle">위치 정보</h4>
+                    <div class="info-address">
+                        <p id="infoAddress">- m</p>
+                        <p id="infoDetailAddress">상세 주소</p>
+                    </div>
+                    <p id="infoTrashType">쓰레기통 유형</p>
+                    <a href="#" id="infoDetailLink" class="detail-link">detail →</a>
+                </div>
+            </div> 
+        </div>
+
+        <!-- 하단 상태 바 -->
+        <footer class="footer dev-only">
+          <div class="status-bar">
+              <span id="totalCount">총 0개의 쓰레기통</span>
+              <span id="visibleCount">화면에 0개 표시 중</span>
+          </div>
+      </footer>
+        
+        <!-- 하단 구글 애드센스 배너 영역 -->
+        <div class="ad-container">
+            <!-- 구글 애드센스 코드가 여기에 들어갑니다 -->
+            하단 광고 영역
+        </div>
+    </div>
+
+    <!-- 사이드 메뉴 (처음에는 숨겨져 있음) -->
+    <div id="sideMenu" class="side-menu">
+        <div class="side-menu-content">
+            <div class="side-menu-header">
+                <img src="logo_BinFinder.svg" alt="BinFinder" class="logo-image">
+                <button id="closeMenu" class="close-button">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="menu-container">
+                <ul class="menu-list">
+                    <li class="add-to-homescreen">바로가기 추가</li>
+                    <li class="divider"></li>
+                    <li>BinFinder 소개</li>
+                    <li>서비스 이용약관</li>
+                    <li>위치기반서비스 이용약관</li>
+                    <li>개인정보 처리방침</li>
+                </ul>
+            </div>
+        </div>
+        <div id="menuOverlay" class="side-menu-overlay"></div>
+    </div>
+
+    <!-- GPS 권한 요청 모달 -->
+    <div id="gpsRequestModal" class="gps-request-modal">
+        <div class="gps-request-content">
+            <h3>#(URL) 이(가) 사용자의 위치 정보를 사용하려고 합니다.</h3>
+            <p>웹(브라우저)에서 현재 사용자의 정확한 위치에 대한 접근 권한이 있기 때문에, 이 웹사이트가 사용자의 정확한 위치를 사용합니다.</p>
+            <div class="gps-request-buttons">
+                <button class="cancel">허용 안함</button>
+                <button class="confirm">허용</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    
+    <!-- 추가 JavaScript 코드 - 근처 쓰레기통 개수 업데이트 -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 기존 script.js에 다음 함수를 추가하거나 여기서 정의
+        function updateNearbyTrashCount() {
+            // 현재 위치를 기준으로 10km 이내의 쓰레기통 개수 계산
+            if (currentLocationMarker && markers.length > 0) {
+                const currentPos = currentLocationMarker.getPosition();
+                let count = 0;
+                
+                markers.forEach(markerObj => {
+                    const markerPos = markerObj.marker.getPosition();
+                    const distance = naver.maps.Service.getDistance(currentPos, markerPos);
+                    
+                    // 10km = 10000m 이내인지 확인
+                    if (distance <= 10000) {
+                        count++;
+                    }
+                });
+                
+                // 개수 업데이트
+                document.getElementById('nearbyTrashCount').textContent = count;
+            }
+        }
+        
+        // 위치가 업데이트될 때마다 근처 쓰레기통 개수 업데이트
+        // 이 부분은 script.js의 위치 업데이트 함수에 추가해야 합니다
+        // 여기서는 예시로만 제공합니다
+        
+        // 기존 코드에 이 함수 호출을 추가해야 합니다:
+        // 1. 현위치 마커가 생성되거나 업데이트될 때
+        // 2. 새로운 마커가 추가될 때
+    });
+    </script>
+</body>
+</html>

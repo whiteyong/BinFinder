@@ -448,7 +448,9 @@
                             <div style="display: flex; gap: 8px; align-items: center;">
                                 <div id="captchaText" style="width: 120px; height: 35px; display: flex; align-items: center; justify-content: center; font-family: monospace; font-size: 18px; letter-spacing: 3px; background: #f8f8f8; text-align: center; border-radius: 4px; user-select: none; border: 1px solid #ddd;"></div>
                                 <button id="refreshCaptcha" style="width: 35px; height: 35px; border: 1px solid #ddd; background: white; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0;">
-                                    <img src="refresh.svg" alt="새로고침" style="width: 20px; height: 20px;">
+                                    <div class="button-icon">
+                                        <img src="/refresh.svg" alt="Refresh" class="icon">
+                                    </div>
                                 </button>
                                 <input type="text" id="captchaInput" placeholder="보안문자 입력" style="width: 190px; height: 35px; border-radius: 5px; border: 1px solid #ddd; padding: 0 10px;">
                             </div>
@@ -525,7 +527,7 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src=`${import.meta.env.BASE_URL}script.js`></script>
     
     <!-- 추가 JavaScript 코드 - 근처 쓰레기통 개수 업데이트 -->
     <script>

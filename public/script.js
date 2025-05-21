@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // 선택된 마커의 아이콘 초기화
             if (selectedMarker) {
                 selectedMarker.setIcon({
-                    url: './trashcan.svg',
+                    url: '/trashcan.svg',
                     size: new naver.maps.Size(30, 40),
                     scaledSize: new naver.maps.Size(30, 40),
                     anchor: new naver.maps.Point(15, 40)
@@ -493,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 position: coords,
                 map: map,
                 icon: {
-                    url: './trashcan.svg',
+                    url: '/trashcan.svg',
                     size: new naver.maps.Size(30, 40),
                     scaledSize: new naver.maps.Size(30, 40),
                     anchor: new naver.maps.Point(15, 40)
@@ -525,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (selectedMarker === marker) {
                     // 아이콘을 기본으로 되돌리고 인포윈도우 닫기
                     marker.setIcon({
-                        url: './trashcan.svg',
+                        url: '/trashcan.svg',
                         size: new naver.maps.Size(30, 40),
                         scaledSize: new naver.maps.Size(30, 40),
                         anchor: new naver.maps.Point(15, 40)
@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // 이전에 선택된 마커가 있는 경우 초기화
                 if (selectedMarker) {
                     selectedMarker.setIcon({
-                        url: './trashcan.svg',
+                        url: '/trashcan.svg',
                         size: new naver.maps.Size(30, 40),
                         scaledSize: new naver.maps.Size(30, 40),
                         anchor: new naver.maps.Point(15, 40)
@@ -1068,7 +1068,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function searchMarkers(searchText) {
         let found = false;
         const defaultIcon = {
-            url: './trashcan.svg',
+            url: '/trashcan.svg',
             size: new naver.maps.Size(30, 40),
             scaledSize: new naver.maps.Size(30, 40),
             anchor: new naver.maps.Point(15, 40)

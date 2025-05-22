@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 function(position) {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
-                    const currentPos = new naver.maps.LatLng(lat, lng);
+                    const currentPos = new naver.maps.LatLng(Latitude, Longitude);
                     
                     // 지도 이동
                     map.setCenter(currentPos);

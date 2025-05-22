@@ -649,18 +649,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 function(position) {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
-                    const currentPos = new naver.maps.LatLng(Latitude, Longitude);
-                    
+                    const currentPos = new naver.maps.LatLng(lat, lng); // 여기서 lat, lng 사용
+
                     // 지도 이동
                     map.setCenter(currentPos);
                     map.setZoom(16);
-                    
+
                     // 현위치 마커 생성
                     createCurrentLocationMarker(currentPos, position.coords.accuracy);
-                    
+
                     // 근처 쓰레기통 개수 업데이트
                     updateNearbyTrashCount();
-                    
+
                     console.log('✅ 위치 권한 허용됨, 현재 위치:', lat, lng);
                 },
                 // 오류 콜백
@@ -748,7 +748,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showLoading(true);
         
         if (navigator.geolocation) {
-            // 위치 추적 시작 - 브라우저 기본 위치 권한 요청 UI 사용
+            // 위치 추적 시작 - 브라우저 기본 위치 권한 요청 사용
             watchId = navigator.geolocation.watchPosition(
                 function(position) {
                     const lat = position.coords.latitude;

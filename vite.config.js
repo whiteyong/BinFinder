@@ -21,7 +21,7 @@ function copyTrashCanCSV() {
 }
 
 export default defineConfig({
-  base: './',
+  base: '/',
   publicDir: 'public',
   plugins: [copyTrashCanCSV()],
   build: {

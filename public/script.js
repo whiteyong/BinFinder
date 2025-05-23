@@ -418,7 +418,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function initMap() {
         const mapOptions = {
             center: defaultCenter,
-            zoom: 13,
+            zoom: 18,
+            minZoom: 16, // 최소 축소 레벨(더 작게 축소 불가)
+            maxZoom: 20, // 최대 확대 레벨(더 크게 확대 불가)
             zoomControl: true,
             zoomControlOptions: {
                 position: naver.maps.Position.RIGHT_CENTER
